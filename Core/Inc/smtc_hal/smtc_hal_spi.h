@@ -105,7 +105,8 @@ void hal_spi_deinit( const uint32_t id );
 
  * @returns in_data      Received byte.
  */
-uint16_t hal_spi_in_out( const uint32_t id, const uint16_t out_data );
+void hal_spi_in_out( const uint32_t id, const uint8_t* cbuffer, uint8_t* rbuffer, uint16_t length );
+void hal_spi_in(const uint32_t id, const uint8_t* buffer, uint16_t length );
 
 #ifdef __cplusplus
 }

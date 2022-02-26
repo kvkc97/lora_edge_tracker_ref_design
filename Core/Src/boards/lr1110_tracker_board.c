@@ -174,7 +174,7 @@ lr1110_modem_response_code_t lr1110_tracker_board_init( const void* context, lr1
     }
 
     /* Initialize TCXO control */
-    modem_response_code |= lr1110_tracker_board_init_tcxo_io( context );
+    //modem_response_code |= lr1110_tracker_board_init_tcxo_io( context );
 
     /* Initialize RF switch control */
     lr1110_modem_system_rf_switch_cfg_t rf_switch_cfg;
@@ -189,6 +189,7 @@ lr1110_modem_response_code_t lr1110_tracker_board_init( const void* context, lr1
 #endif
 
     modem_response_code |= lr1110_modem_system_set_dio_as_rf_switch( context, &rf_switch_cfg );
+
 
     /* Set Pa Config */
 #if USE_RFO_LP_LF

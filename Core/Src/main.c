@@ -153,7 +153,7 @@ int main(void)
   sprintf( data, "[INFO]:QSPI Initialized\n\r" );
   while(CDC_Transmit_FS(&data, strlen(data)) == USBD_BUSY)
   HAL_Delay(5);
-  //main_wifi();
+  main_wifi();
   while (1)
   {
     /* USER CODE END WHILE */

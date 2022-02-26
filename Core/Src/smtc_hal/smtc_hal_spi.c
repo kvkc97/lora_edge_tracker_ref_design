@@ -42,7 +42,7 @@
 #include "smtc_hal_gpio_pin_names.h"
 #include "smtc_hal_spi.h"
 #include "smtc_hal_mcu.h"
-
+#include "usb_device.h"
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE MACROS-----------------------------------------------------------
@@ -62,12 +62,13 @@
  * -----------------------------------------------------------------------------
  * --- PRIVATE VARIABLES -------------------------------------------------------
  */
-
+SPI_HandleTypeDef hspi2;
+char data[200];
 static hal_spi_t hal_spi[] = {
     [0] =
         {
             .interface = SPI2,
-            .handle    = { NULL },
+            .handle    =  {NULL} ,
             .pins =
                 {
                     .mosi = NC,
@@ -91,7 +92,7 @@ void hal_spi_init( const uint32_t id, const hal_gpio_pin_names_t mosi, const hal
                    const hal_gpio_pin_names_t sclk )
 {
     assert_param( ( id > 0 ) && ( ( id - 1 ) < sizeof( hal_spi ) ) );
-    uint32_t local_id = id - 1;
+    uint32_t local_id = 0;//id - 1;
 
     hal_spi[local_id].handle.Instance               = hal_spi[local_id].interface;
     hal_spi[local_id].handle.Init.Mode              = SPI_MODE_MASTER;
@@ -105,11 +106,13 @@ void hal_spi_init( const uint32_t id, const hal_gpio_pin_names_t mosi, const hal
     hal_spi[local_id].handle.Init.TIMode            = SPI_TIMODE_DISABLE;
     hal_spi[local_id].handle.Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
     hal_spi[local_id].handle.Init.CRCPolynomial     = 7;
+    hal_spi[local_id].handle.Init.CRCLength 		= SPI_CRC_LENGTH_DATASIZE;
+    hal_spi[local_id].handle.Init.NSSPMode 			= SPI_NSS_PULSE_ENABLE;
 
     hal_spi[local_id].pins.mosi = mosi;
     hal_spi[local_id].pins.miso = miso;
     hal_spi[local_id].pins.sclk = sclk;
-
+    HAL_SPI_MspInit( &hal_spi[local_id].handle );
     if( HAL_SPI_Init( &hal_spi[local_id].handle ) != HAL_OK )
     {
         hal_mcu_panic( );
@@ -120,15 +123,15 @@ void hal_spi_init( const uint32_t id, const hal_gpio_pin_names_t mosi, const hal
 void hal_spi_deinit( const uint32_t id )
 {
     assert_param( ( id > 0 ) && ( ( id - 1 ) < sizeof( hal_spi ) ) );
-    uint32_t local_id = id - 1;
+    uint32_t local_id = 0;//id - 1;
 
     HAL_SPI_DeInit( &hal_spi[local_id].handle );
 }
 
-uint16_t hal_spi_in_out( const uint32_t id, const uint16_t out_data )
+/*uint16_t hal_spi_in_out( const uint32_t id, const uint16_t out_data )
 {
     assert_param( ( id > 0 ) && ( ( id - 1 ) < sizeof( hal_spi ) ) );
-    uint32_t local_id = id - 1;
+    uint32_t local_id = 0;//id - 1;
 
     while( LL_SPI_IsActiveFlag_TXE( hal_spi[local_id].interface ) == 0 )
     {
@@ -139,6 +142,51 @@ uint16_t hal_spi_in_out( const uint32_t id, const uint16_t out_data )
     {
     };
     return LL_SPI_ReceiveData8( hal_spi[local_id].interface );
+}*/
+
+
+void hal_spi_in_out(const uint32_t id, const uint8_t* cbuffer, uint8_t* rbuffer, uint16_t length )
+{
+    assert_param( ( id > 0 ) && ( ( id - 1 ) < sizeof( hal_spi ) ) );
+    uint32_t local_id = 0;//id - 1;
+
+    for( uint16_t i = 0; i < length; i++ )
+    {
+        while( LL_SPI_IsActiveFlag_TXE( hal_spi[local_id].interface ) == 0 )
+        {
+        };
+
+        LL_SPI_TransmitData8( hal_spi[local_id].interface, cbuffer[i] );
+
+        while( LL_SPI_IsActiveFlag_RXNE( hal_spi[local_id].interface ) == 0 )
+        {
+        };
+
+        rbuffer[i] = LL_SPI_ReceiveData8( hal_spi[local_id].interface );
+    }
+}
+
+void hal_spi_in(const uint32_t id, const uint8_t* buffer, uint16_t length )
+{
+    assert_param( ( id > 0 ) && ( ( id - 1 ) < sizeof( hal_spi ) ) );
+    uint32_t local_id = 0;//id - 1;
+
+    for( uint16_t i = 0; i < length; i++ )
+    {
+        while( LL_SPI_IsActiveFlag_TXE( hal_spi[local_id].interface ) == 0 )
+        {
+        };
+
+        LL_SPI_TransmitData8( hal_spi[local_id].interface, buffer[i] );
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_11, GPIO_PIN_RESET);
+
+        while( LL_SPI_IsActiveFlag_RXNE( hal_spi[local_id].interface ) == 0 )
+        {
+        };
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, GPIO_PIN_RESET);
+
+        LL_SPI_ReceiveData8( hal_spi[local_id].interface );
+    }
 }
 
 void HAL_SPI_MspInit( SPI_HandleTypeDef* spiHandle )
@@ -156,7 +204,7 @@ void HAL_SPI_MspInit( SPI_HandleTypeDef* spiHandle )
                    ( 1 << ( hal_spi[0].pins.sclk & 0x0F ) );
         HAL_GPIO_Init( gpio_port, &gpio );
 
-        __HAL_RCC_SPI1_CLK_ENABLE( );
+        __HAL_RCC_SPI2_CLK_ENABLE( );
     }
     else
     {

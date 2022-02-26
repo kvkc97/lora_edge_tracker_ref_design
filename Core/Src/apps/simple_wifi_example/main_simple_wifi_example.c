@@ -108,7 +108,7 @@ int main_wifi( void )
     static wifi_scan_all_results_t capture_result;
 
     /* Init board */
-    //hal_mcu_init( );
+    hal_mcu_init( );
     //hal_mcu_init_periph( );
 
     /* Board is initialized */
